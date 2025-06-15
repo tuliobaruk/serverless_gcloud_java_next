@@ -22,6 +22,9 @@ public class MyCloudEventFunction implements CloudEventsFunction {
     private static final Gson gson = new Gson();
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".gif");
 
+    private static final int MAX_WIDTH = 4000;
+    private static final int MAX_HEIGHT = 4000;
+
     private static class StorageObject {
         String bucket;
         String name;
@@ -73,6 +76,12 @@ public class MyCloudEventFunction implements CloudEventsFunction {
             String[] dimensions = dimensionsPart.split("x");
             width = Integer.parseInt(dimensions[0]);
             height = Integer.parseInt(dimensions[1]);
+
+            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                logger.warning("Dimensões muito grandes: " + width + "x" + height + ". Ignorando.");
+                return;
+            }
+
             logger.info("Dimensões extraídas do nome do arquivo: " + width + "x" + height);
         } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
             logger.severe("Nome do arquivo '" + fileName + "' não segue o padrão 'larguraxaltura_...'. Ignorando arquivo.");
