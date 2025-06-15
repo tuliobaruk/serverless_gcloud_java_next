@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Exemplo serverless utilizando Google Cloud Storage e Cloud Run para manipulação de PDF e imagem",
-  description: "Feito com Next.js, Google Cloud Run e Google Cloud Storage para manipulação de arquivos PDF e imagem.",
+  description: "Feito com Next.js, Google Cloud Run e Google Cloud Storage para manipulação de imagems.",
 };
 
 export default function RootLayout({
@@ -29,8 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <Nav />
-        <div className="pt-20">{children}</div>
+        {children}
       </body>
     </html>
   );
