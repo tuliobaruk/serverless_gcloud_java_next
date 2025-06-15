@@ -20,8 +20,6 @@ public class MyCloudEventFunction implements CloudEventsFunction {
 
     private static final Logger logger = Logger.getLogger(MyCloudEventFunction.class.getName());
     private static final Gson gson = new Gson();
-    private static final int TARGET_WIDTH = 256;
-    private static final int TARGET_HEIGHT = 256;
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".gif");
 
     private static class StorageObject {
@@ -45,7 +43,6 @@ public class MyCloudEventFunction implements CloudEventsFunction {
         }
 
         String cloudEventData = new String(event.getData().toBytes(), StandardCharsets.UTF_8);
-
         StorageObject storageObject = gson.fromJson(cloudEventData, StorageObject.class);
 
         if (storageObject == null || storageObject.bucket == null || storageObject.name == null) {
@@ -69,6 +66,19 @@ public class MyCloudEventFunction implements CloudEventsFunction {
             return;
         }
 
+        int width;
+        int height;
+        try {
+            String dimensionsPart = fileName.split("_")[0];
+            String[] dimensions = dimensionsPart.split("x");
+            width = Integer.parseInt(dimensions[0]);
+            height = Integer.parseInt(dimensions[1]);
+            logger.info("Dimensões extraídas do nome do arquivo: " + width + "x" + height);
+        } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
+            logger.severe("Nome do arquivo '" + fileName + "' não segue o padrão 'larguraxaltura_...'. Ignorando arquivo.");
+            return;
+        }
+
         Storage storage = StorageOptions.getDefaultInstance().getService();
 
         try {
@@ -84,10 +94,11 @@ public class MyCloudEventFunction implements CloudEventsFunction {
             }
 
             int imageType = (originalImage.getType() == 0) ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
-            BufferedImage resizedImage = new BufferedImage(TARGET_WIDTH, TARGET_HEIGHT, imageType);
+
+            BufferedImage resizedImage = new BufferedImage(width, height, imageType);
 
             Graphics2D g = resizedImage.createGraphics();
-            g.drawImage(originalImage, 0, 0, TARGET_WIDTH, TARGET_HEIGHT, null);
+            g.drawImage(originalImage, 0, 0, width, height, null);
             g.dispose();
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

@@ -13,8 +13,12 @@ export const UploadFile = async (
 ) => {
   try {
     const file = form.get('file') as File;
+    const width = form.get('width') as string;
+    const height = form.get('height') as string;
     if (!file) throw new Error('No file provided');
-    const fileName = generateFileName(file.name);
+    if (!width || !height) throw new Error('Largura e altura são obrigatórias');
+    const prefix = `${width}x${height}`;
+    const fileName = generateFileName(file.name, prefix);
     const renamedFile = new File([await file.arrayBuffer()], fileName, { type: file.type });
     await UploadToGcs(renamedFile);
     return { fileName };
