@@ -1,5 +1,5 @@
 'use client';
-import React, { useActionState, useState } from 'react';
+import React, { useActionState, useState, useRef } from 'react';
 import { UploadFile } from '@/lib/actions';
 import { StatusPolling } from './StatusPolling';
 
@@ -15,6 +15,19 @@ export default function FileUpload() {
   const [state, formAction] = useActionState<UploadState, FormData>(UploadFile, initialState);
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setFileError(null);
+    const file = e.target.files?.[0];
+    if (file && !allowedTypes.includes(file.type)) {
+      setFileError('Apenas arquivos JPG, JPEG, PNG ou GIF são permitidos.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-[#232326] dark:to-[#18181b]">
@@ -31,15 +44,21 @@ export default function FileUpload() {
         >
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" htmlFor="file">
-              Selecione a imagem <span className="text-xs text-gray-400">(JPG, PNG, até 10MB)</span>
+              Selecione a imagem <span className="text-xs text-gray-400">(JPG, JPEG, PNG ou GIF, até 10MB)</span>
             </label>
             <input
               type="file"
               name="file"
               id="file"
+              accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+              ref={fileInputRef}
+              onChange={handleFileChange}
               className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200"
               required
             />
+            {fileError && (
+              <div className="text-red-600 text-sm mt-2">{fileError}</div>
+            )}
           </div>
           <div className="flex gap-4">
             <div className="flex-1">

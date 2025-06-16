@@ -7,6 +7,8 @@ import { generateFileName } from '@/lib/generateFileName';
 const keyFilename = process.env.GCS_KEY_FILENAME;
 const bucketName = process.env.GCS_BUCKET_NAME;
 const maxDimension = Number(process.env.MAX_IMAGE_DIMENSION) || 4000;
+const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
 
 export const UploadFile = async (
   prevState: { fileName?: string; error?: string },
@@ -21,6 +23,16 @@ export const UploadFile = async (
     if (width > maxDimension || height > maxDimension) {
       throw new Error(`Largura e altura não podem ser maiores que ${maxDimension}px`);
     }
+
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Tipo de arquivo não permitido. Envie JPG, JPEG, PNG ou GIF.');
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !allowedExtensions.includes(ext)) {
+      throw new Error('Extensão de arquivo não permitida.');
+    }
+
     const prefix = `${width}x${height}`;
     const fileName = generateFileName(file.name, prefix);
     const renamedFile = new File([await file.arrayBuffer()], fileName, { type: file.type });
@@ -28,7 +40,7 @@ export const UploadFile = async (
     return { fileName };
   } catch (error) {
     console.error(error);
-    return { error: 'Erro ao fazer upload' };
+    return { error: (error as Error).message || 'Erro ao fazer upload' };
   }
 };
 
