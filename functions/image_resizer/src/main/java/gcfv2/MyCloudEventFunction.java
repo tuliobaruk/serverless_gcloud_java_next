@@ -21,17 +21,37 @@ public class MyCloudEventFunction implements CloudEventsFunction {
     private static final Logger logger = Logger.getLogger(MyCloudEventFunction.class.getName());
     private static final Gson gson = new Gson();
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".gif");
+    private static final int MAX_ALLOWED_SIZE;
 
-    // Deixei estas dimensões como constantes, mas você pode ajustá-las conforme necessário.
-    // Utilizando Cloud Functions com 512MB de memória, consegui redimensionar imagens de até 4000x4000 pixels.
-    // Se precisar de imagens maiores, considere aumentar a memória da função.
+    static {
+        // Aqui eu defini o tamanho máximo padrão para redimensionamento como 4000px, -
+        // isto foi baseado nos meus testes que utilizando funções no Cloud Run com 512MB de memória -
+        // o tamanho máximo de imagem que consegui processar tranquilamente foi 4000x4000px.
 
-    // O Maior teste que fiz foi com um limite de 20000x20000 pixels em uma instância com 8GB de memória
-    // A função conseguiu redimensionar perfeitamente, mas o tamanho do arquivo final era tão grande que
-    // quando o navegador exibia a imagem (de mais de 100MB) ele praticamente travava.
+        // A variável de ambiente MAX_SIZE pode ser definida para alterar esse valor.
+        // Se não for definida, o valor padrão de 4000px será utilizado.
 
-    private static final int MAX_WIDTH = 4000;
-    private static final int MAX_HEIGHT = 4000;
+        // O Maior teste que fiz foi redimensionar uma imagem para 20000x20000px
+        // Consegui processar tranquilamente porém tive que aumentar a memória da função de 512mb para 8GB.
+        int defaultMaxSize = 4000;
+        int maxSizeFromEnv = defaultMaxSize;
+
+        String maxSizeStr = System.getenv("MAX_SIZE");
+
+        if (maxSizeStr != null && !maxSizeStr.isEmpty()) {
+            try {
+                maxSizeFromEnv = Integer.parseInt(maxSizeStr);
+                logger.info("Variável de ambiente MAX_SIZE definida para: " + maxSizeFromEnv);
+            } catch (NumberFormatException e) {
+                logger.warning("Valor da variável de ambiente MAX_SIZE ('" + maxSizeStr + "') não é um número válido. Usando valor padrão: " + defaultMaxSize);
+                maxSizeFromEnv = defaultMaxSize;
+            }
+        } else {
+            logger.info("Variável de ambiente MAX_SIZE não definida. Usando valor padrão: " + defaultMaxSize + "px");
+        }
+
+        MAX_ALLOWED_SIZE = maxSizeFromEnv;
+    }
 
     private static class StorageObject {
         String bucket;
@@ -85,8 +105,8 @@ public class MyCloudEventFunction implements CloudEventsFunction {
             width = Integer.parseInt(dimensions[0]);
             height = Integer.parseInt(dimensions[1]);
 
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                logger.warning("Dimensões muito grandes: " + width + "x" + height + ". Ignorando.");
+            if (width > MAX_ALLOWED_SIZE || height > MAX_ALLOWED_SIZE) {
+                logger.warning("Dimensões solicitadas (" + width + "x" + height + ") excedem o limite máximo de " + MAX_ALLOWED_SIZE + "px. Ignorando.");
                 return;
             }
 
@@ -97,7 +117,6 @@ public class MyCloudEventFunction implements CloudEventsFunction {
         }
 
         Storage storage = StorageOptions.getDefaultInstance().getService();
-
         try {
             logger.info("Baixando imagem: " + fileName + " do bucket: " + sourceBucket);
             BlobId blobId = BlobId.of(sourceBucket, fileName);
@@ -111,15 +130,12 @@ public class MyCloudEventFunction implements CloudEventsFunction {
             }
 
             int imageType = (originalImage.getType() == 0) ? BufferedImage.TYPE_INT_ARGB : originalImage.getType();
-
             BufferedImage resizedImage = new BufferedImage(width, height, imageType);
-
             Graphics2D g = resizedImage.createGraphics();
             g.drawImage(originalImage, 0, 0, width, height, null);
             g.dispose();
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
             String imageFormat = fileExtension.substring(1);
             ImageIO.write(resizedImage, imageFormat, outputStream);
             byte[] resizedImageBytes = outputStream.toByteArray();
@@ -130,7 +146,6 @@ public class MyCloudEventFunction implements CloudEventsFunction {
             BlobInfo newBlobInfo = BlobInfo.newBuilder(newBlobId).setContentType(storageObject.contentType).build();
 
             storage.create(newBlobInfo, resizedImageBytes);
-
             logger.info("Sucesso! Imagem '" + fileName + "' redimensionada e salva em '" + destinationBucketName + "'.");
 
         } catch (StorageException | IOException e) {
