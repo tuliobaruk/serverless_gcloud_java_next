@@ -22,6 +22,14 @@ public class MyCloudEventFunction implements CloudEventsFunction {
     private static final Gson gson = new Gson();
     private static final List<String> SUPPORTED_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".gif");
 
+    // Deixei estas dimensões como constantes, mas você pode ajustá-las conforme necessário.
+    // Utilizando Cloud Functions com 512MB de memória, consegui redimensionar imagens de até 4000x4000 pixels.
+    // Se precisar de imagens maiores, considere aumentar a memória da função.
+
+    // O Maior teste que fiz foi com um limite de 20000x20000 pixels em uma instância com 8GB de memória
+    // A função conseguiu redimensionar perfeitamente, mas o tamanho do arquivo final era tão grande que
+    // quando o navegador exibia a imagem (de mais de 100MB) ele praticamente travava.
+
     private static final int MAX_WIDTH = 4000;
     private static final int MAX_HEIGHT = 4000;
 

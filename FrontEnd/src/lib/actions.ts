@@ -6,6 +6,7 @@ import { generateFileName } from '@/lib/generateFileName';
 
 const keyFilename = process.env.GCS_KEY_FILENAME;
 const bucketName = process.env.GCS_BUCKET_NAME;
+const maxDimension = Number(process.env.MAX_IMAGE_DIMENSION) || 4000;
 
 export const UploadFile = async (
   prevState: { fileName?: string; error?: string },
@@ -13,10 +14,13 @@ export const UploadFile = async (
 ) => {
   try {
     const file = form.get('file') as File;
-    const width = form.get('width') as string;
-    const height = form.get('height') as string;
+    const width = Number(form.get('width'));
+    const height = Number(form.get('height'));
     if (!file) throw new Error('No file provided');
     if (!width || !height) throw new Error('Largura e altura são obrigatórias');
+    if (width > maxDimension || height > maxDimension) {
+      throw new Error(`Largura e altura não podem ser maiores que ${maxDimension}px`);
+    }
     const prefix = `${width}x${height}`;
     const fileName = generateFileName(file.name, prefix);
     const renamedFile = new File([await file.arrayBuffer()], fileName, { type: file.type });
