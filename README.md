@@ -175,17 +175,22 @@ Acesse: [http://localhost:3000](http://localhost:3000)
 ## Upload via Interface Web
 
 Homepage da aplicação:
+
 [![Homepage](./docs/frontEnd1.png)](./docs/frontEnd1.png)
 
 Formulário para o envio da imagem:
+
 [![Form](./docs/frontEnd2.png)](./docs/frontEnd2.png)
 
 Redimensionamento sendo processado:
+
 [![Form](./docs/frontEnd3.png)](./docs/frontEnd3.png)
 
 Resultado do redimensionamento (1/2):
+
 [![Form](./docs/frontEnd4.png)](./docs/frontEnd4.png)
 
 Resultado do redimensionamento (2/2):
+
 [![Form](./docs/frontEnd5.png)](./docs/frontEnd5.png)
 
